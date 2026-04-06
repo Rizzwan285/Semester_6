@@ -1,0 +1,1 @@
+privilege = (admin_flag == 1) ? ((key_card == 1) ? 2 : 1) : 0;
