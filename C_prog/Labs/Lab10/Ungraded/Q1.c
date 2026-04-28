@@ -1,29 +1,55 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <unistd.h>
 
-pthread_mutex_t lock;
+#define NUM_THREADS 3
+#define PRINT_COUNT 5
 
-void* print_msg(void* arg) {
-    int id = *(int*)arg;
+pthread_mutex_t print_mutex;
 
-    pthread_mutex_lock(&lock);
-    printf("Thread %d is printing\n", id);
-    pthread_mutex_unlock(&lock);
+typedef struct {
+    int thread_id;
+    char message[100];
+} ThreadData;
+
+void* print_message(void* arg) {
+    ThreadData* data = (ThreadData*)arg;
+
+    for (int i = 0; i < PRINT_COUNT; i++) {
+        pthread_mutex_lock(&print_mutex);
+
+        printf("Thread %d: %s | Print %d\n",
+               data->thread_id,
+               data->message,
+               i + 1);
+
+        pthread_mutex_unlock(&print_mutex);
+
+        usleep(100000);
+    }
 
     return NULL;
 }
 
 int main() {
-    pthread_t t[3];
-    int id[3] = {1, 2, 3};
+    pthread_t threads[NUM_THREADS];
+    ThreadData data[NUM_THREADS] = {
+        {1, "Hello from thread 1"},
+        {2, "Hello from thread 2"},
+        {3, "Hello from thread 3"}
+    };
 
-    pthread_mutex_init(&lock, NULL);
+    pthread_mutex_init(&print_mutex, NULL);
 
-    for(int i = 0; i < 3; i++)
-        pthread_create(&t[i], NULL, print_msg, &id[i]);
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_create(&threads[i], NULL, print_message, &data[i]);
+    }
 
-    for(int i = 0; i < 3; i++)
-        pthread_join(t[i], NULL);
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&print_mutex);
 
     return 0;
 }

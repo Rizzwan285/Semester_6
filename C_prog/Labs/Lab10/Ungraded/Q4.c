@@ -1,40 +1,63 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <unistd.h>
 
-int resources = 3;
-pthread_mutex_t lock;
+#define NUM_THREADS 5
+
+int available_resources = 3;
+pthread_mutex_t resource_mutex;
 
 void* use_resource(void* arg) {
-    int id = *(int*)arg;
+    int thread_id = *(int*)arg;
 
-    pthread_mutex_lock(&lock);
+    pthread_mutex_lock(&resource_mutex);
 
-    if(resources > 0) {
-        resources--;
-        printf("Thread %d using resource, left = %d\n", id, resources);
+    if (available_resources > 0) {
+        available_resources--;
 
-        resources++;
-        printf("Thread %d released resource, available = %d\n", id, resources);
+        printf("Thread %d is using a resource. Available resources = %d\n",
+               thread_id,
+               available_resources);
+
+        pthread_mutex_unlock(&resource_mutex);
+
+        sleep(1);
+
+        pthread_mutex_lock(&resource_mutex);
+
+        available_resources++;
+
+        printf("Thread %d released the resource. Available resources = %d\n",
+               thread_id,
+               available_resources);
+
+        pthread_mutex_unlock(&resource_mutex);
     } else {
-        printf("Thread %d: No resource available\n", id);
-    }
+        printf("Thread %d could not get a resource. No resource available.\n",
+               thread_id);
 
-    pthread_mutex_unlock(&lock);
+        pthread_mutex_unlock(&resource_mutex);
+    }
 
     return NULL;
 }
 
 int main() {
-    pthread_t t[5];
-    int id[5] = {1,2,3,4,5};
+    pthread_t threads[NUM_THREADS];
+    int thread_ids[NUM_THREADS];
 
-    pthread_mutex_init(&lock, NULL);
+    pthread_mutex_init(&resource_mutex, NULL);
 
-    for(int i = 0; i < 5; i++)
-        pthread_create(&t[i], NULL, use_resource, &id[i]);
+    for (int i = 0; i < NUM_THREADS; i++) {
+        thread_ids[i] = i + 1;
+        pthread_create(&threads[i], NULL, use_resource, &thread_ids[i]);
+    }
 
-    for(int i = 0; i < 5; i++)
-        pthread_join(t[i], NULL);
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&resource_mutex);
 
     return 0;
 }
