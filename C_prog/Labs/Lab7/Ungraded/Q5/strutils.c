@@ -61,15 +61,13 @@ int str_count_word(const char *s, char target)
     return count;
 }
 
-void str_to_upper(char *s)
+void str_to_upper(char *s) 
 {
     int i = 0;
-
     while (s[i] != '\0')
     {
         if (s[i] >= 'a' && s[i] <= 'z')
             s[i] = s[i] - 32;
-
         i++;
     }
 }
